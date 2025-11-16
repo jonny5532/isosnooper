@@ -23,13 +23,18 @@ recv_wait2:
     jmp !x recv_wait2 side 0
 
 recv_started:   
-    ; wait a bit before sampling twice
-    nop [2] side 0
     ; first sample
-    in pins, 2 [14] side 1
+    in pins, 2 [15] side 1
+    nop side 1 [6]; maybe remove this?
     ; second sample
-    in pins, 2 [15] side 0 
+    in pins, 2 [15] side 0
 
+    nop [15] side 0
+    ;nop [15] side 0
+
+;wait_for_idle:
+;    mov x, pins side 0
+;    jmp x--, wait_for_idle side 0
 
 
 .wrap
@@ -38,8 +43,23 @@ recv_started:
 % c-sdk {
 // this is a raw helper function for use by the user which sets up the GPIO output, and configures the SM to output on a particular pin
 
-void isosnoop_pio_setup(PIO pio, uint sm, uint offset, uint rx_pin_base, uint sampling_pin) {
+void isosnoop_pio_setup(PIO pio, uint sm, uint offset, uint rx_pin_base, int invert, uint sampling_pin) {
     // we don't need to init GPIOs as inputs
+
+    gpio_init(rx_pin_base);
+    gpio_set_dir(rx_pin_base, GPIO_IN);
+    gpio_pull_up(rx_pin_base);
+
+    gpio_init(rx_pin_base + 1);
+    gpio_set_dir(rx_pin_base + 1, GPIO_IN);
+    gpio_pull_up(rx_pin_base + 1);
+
+
+    if(invert) {
+        // invert both RX pins
+        gpio_set_inover(rx_pin_base, GPIO_OVERRIDE_INVERT);
+        gpio_set_inover(rx_pin_base + 1, GPIO_OVERRIDE_INVERT);
+    }
 
     pio_sm_config c = isosnoop_program_get_default_config(offset);
 

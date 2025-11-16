@@ -1,9 +1,3 @@
-/**
- * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
 #include <stdio.h>
 #include "pico/stdlib.h"
 
@@ -20,11 +14,11 @@ int main() {
     stdio_usb_init();
     //while (!stdio_usb_connected()) {}
     
-    isospi_master_setup(LED_PIN+1, 2);
-    isosnoop_setup(LED_PIN+1, 8);
+    isospi_master_setup(20, 2); // pins 20+21
+    isosnoop_setup(18, true, 16);
     
     // printf("waiting...\n");
-    // sleep_ms(5000);
+// sleep_ms(5000);
     // printf("continuing...\n");
 
     while(true) {
@@ -32,7 +26,7 @@ int main() {
         char rx[sizeof(tx)] = {0};
 
         bool valid = isospi_write_read_blocking(tx, rx, sizeof(tx));
-        printf("Valid: %d\n", valid);
+        //printf("Valid: %d\n", valid);
 
         isosnoop_print_buffer();
     }

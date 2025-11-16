@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 # include the SDK
-include(pico_sdk_import.cmake)
+include(../pico-sdk/pico_sdk_init.cmake)
 
 project(my_project C CXX)
 
@@ -11,9 +11,9 @@ pico_sdk_init()
 ######
 
 add_executable(isosnooper
-    isosnooper.cpp
-    isosnoop.cpp
-    isospi_master.cpp
+    isosnooper.c
+    isosnoop.c
+    isospi_master.c
     )
 
 pico_generate_pio_header(isosnooper ${CMAKE_CURRENT_LIST_DIR}/isospi_master.pio)
