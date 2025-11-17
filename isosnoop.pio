@@ -2,10 +2,22 @@
 
 .program isosnoop
 .side_set 1
+
+; the sampling points - multiplied by 6.7ns
+
+.define SAMPLE_POS_1   9  ; must be between 3 and 18 inclusive
+.define SAMPLE_POS_2  29  ; must be between SAMPLE_POS_1+17 and SAMPLE_POST_1+32
+.define SAMPLE_END    45
+
+; the min recordable gap width - multiplied by 20ns
+
+.define MIN_GAP 31
+
+
 .wrap_target
 
     ; count down
-    set y, 20 side 0
+    set y, MIN_GAP side 0
 recv_wait:
     ; read the two input pins
     mov x, pins side 0
@@ -23,14 +35,13 @@ recv_wait2:
     jmp !x recv_wait2 side 0
 
 recv_started:   
+    ; wait until the first sampling point
+    nop [SAMPLE_POS_1 - 3] side 0
     ; first sample
-    in pins, 2 [14] side 1
-    ;nop side 1 [6]; maybe remove this?
+    in pins, 2 [15] side 1
+    nop [SAMPLE_POS_2 - SAMPLE_POS_1 - 17] side 1
     ; second sample
-    in pins, 2 [15] side 0
-
-    ;nop [2] side 0
-    ;nop [15] side 0
+    in pins, 2 [SAMPLE_END - SAMPLE_POS_2 - 1] side 0
 
 ;wait_for_idle:
 ;    mov x, pins side 0

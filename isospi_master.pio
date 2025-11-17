@@ -151,7 +151,7 @@ void isospi_master_program_init(PIO pio, uint sm, uint offset, uint tx_pin_base,
     sm_config_set_in_pin_base(&c, rx_pin_base);
     sm_config_set_in_pin_count(&c, rx_pin_base);
 
-    //sm_config_set_clkdiv_int_frac8(&c, 2, 0);
+    sm_config_set_clkdiv_int_frac8(&c, 1, 100);
 
     //sm_config_set_set_pins(&c, rts_pin, 1);
 

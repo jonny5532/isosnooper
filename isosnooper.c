@@ -2,6 +2,7 @@
 #include "pico/stdlib.h"
 
 #include "isospi_master.h"
+#include "isospi_scope.h"
 #include "isosnoop.h"
 
 #ifndef LED_DELAY_MS
@@ -16,6 +17,7 @@ int main() {
     
     isospi_master_setup(20, 2); // pins 20+21
     isosnoop_setup(18, true, 16);
+    isospi_scope_setup(18, true);
     
     // printf("waiting...\n");
 // sleep_ms(5000);
@@ -29,6 +31,10 @@ int main() {
         bool valid = isospi_write_read_blocking(tx, rx, sizeof(tx));
         //printf("Valid: %d\n", valid);
 
+        sleep_us(2);
+
         isosnoop_print_buffer();
+
+        print_isospi_scope_output();
     }
 }
