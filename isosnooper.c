@@ -22,6 +22,7 @@ int main() {
     // printf("continuing...\n");
 
     while(true) {
+        sleep_us(1000);
         char tx[] = {0b10101010, 0b11111111, 0b00000000, 0b11001100, 0b00110011};
         char rx[sizeof(tx)] = {0};
 

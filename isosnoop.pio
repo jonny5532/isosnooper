@@ -24,12 +24,12 @@ recv_wait2:
 
 recv_started:   
     ; first sample
-    in pins, 2 [15] side 1
-    nop side 1 [6]; maybe remove this?
+    in pins, 2 [14] side 1
+    ;nop side 1 [6]; maybe remove this?
     ; second sample
     in pins, 2 [15] side 0
 
-    nop [15] side 0
+    ;nop [2] side 0
     ;nop [15] side 0
 
 ;wait_for_idle:
