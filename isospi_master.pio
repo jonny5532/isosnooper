@@ -1,15 +1,28 @@
 .pio_version 0 // only requires PIO version 0
 
 ; Patterns when testing
-;.define tx_high 0b10
-;.define tx_low  0b01
-;.define tx_idle 0b00
+;.define TX_HIGH 0b10
+;.define TX_LOW  0b01
+;.define TX_IDLE 0b00
 
 ; Actual patterns when using a driver
-.define tx_high 0b11
-.define tx_low  0b10
-.define tx_idle 0b00
+.define TX_HIGH 0b11
+.define TX_LOW  0b10
+.define TX_IDLE 0b00
 
+; length of half-bit pulses (multipled by 6.7ns)
+
+.define CS_PULSE_LEN   32
+.define DATA_PULSE_LEN 16
+
+; the reply sampling points (multiplied by 6.7ns)
+
+.define SAMPLE_POS_1   9
+.define SAMPLE_POS_2  29
+
+; how long to wait for the reply (multiplied by 20ns)
+
+.define REPLY_WAIT 30
 
 .program isospi_master
 .wrap_target
@@ -18,9 +31,9 @@
     out y, 8
 
     ; do the chip select pattern
-    set pins tx_high [31]
-    set pins tx_low  [31]
-    set pins tx_idle [31]
+    set pins TX_HIGH [CS_PULSE_LEN-1]
+    set pins TX_LOW  [CS_PULSE_LEN-1]
+    set pins TX_IDLE [31]
 
     ;set y, 31
     ; delay after chip select
@@ -37,20 +50,20 @@ do_bit:
     jmp !x zero_bit
 
     ; output a 1
-    set pins, tx_high [15]
-    set pins, tx_low  [15]
+    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_LOW  [DATA_PULSE_LEN-1]
     jmp done
 
     ; cheeky void space
 
 zero_bit:
     ; output a 0
-    set pins, tx_low  [15]
-    set pins, tx_high [15]
+    set pins, TX_LOW  [DATA_PULSE_LEN-1]
+    set pins, TX_HIGH [DATA_PULSE_LEN-1]
 
 done:
     ; go idle and wait for the lines to settle
-    set pins, tx_idle [15]
+    set pins, TX_IDLE [15]
     
     ; RECV PHASE
     ; unfortunately our bit-wait loop is 3 cycles long, so our sampling is going to be rather sloppy...
@@ -60,11 +73,11 @@ done:
 
 
     ; simulate a delay before the reply
-    nop [30]
-    nop [18]
+    ;nop [30]
+    ;nop [18]
 
     ; count down waiting for a reply
-    set y, 30
+    set y, REPLY_WAIT
 recv_wait:
     ; read the two input pins
     mov x, pins
@@ -78,13 +91,12 @@ recv_wait:
     jmp recv_done[1]
 
 recv_started:
-
-    ; wait a bit before sampling twice
-    nop [3]
+    nop [SAMPLE_POS_1 - 3]
     ; first sample
-    in pins, 2 [14]
+    in pins, 2 [SAMPLE_POS_2 - SAMPLE_POS_1 - 1]
     ; second sample
-    in pins, 2 [30]
+    in pins, 2 [31]
+    
 
 
 recv_done:
@@ -105,11 +117,13 @@ recv_done:
     nop
     nop
     nop
+    nop
+    nop
 
     ; end chip select (this is a jump target)
-    set pins tx_low  [31]
-    set pins tx_high [31]
-    set pins tx_idle [31]
+    set pins TX_LOW  [31]
+    set pins TX_HIGH [31]
+    set pins TX_IDLE [31]
 
 .wrap
 

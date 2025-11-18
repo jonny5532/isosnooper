@@ -1,5 +1,7 @@
 #include "isospi_master.pio.h"
 
+#include "pico/stdlib.h"
+
 #define ISOSPI_MASTER_PIO pio0
 #define ISOSPI_MASTER_SM 0
 
@@ -18,6 +20,8 @@ void isospi_master_setup(uint tx_pin_base, uint rx_pin_base) {
 bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
     const uint8_t cs_front_porch = 150; // wait after asserting CS
     pio_sm_put_blocking(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, cs_front_porch << 24);
+
+    sleep_us(5);
 
     bool valid = true;
     for(size_t i=0; i<len; i++) {
@@ -41,10 +45,24 @@ bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
                 in_buf[i] = (in_buf[i] << 1) | 0x0;
             }
         }
+        sleep_us(1);
     }
+
+    sleep_us(5);
 
     // jump to third-from-last instruction
     pio_sm_exec(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, pio_encode_jmp(29)); 
 
+    sleep_us(10);
+
     return valid;
+}
+
+void isospi_invert_first_chip_select(bool invert) {
+    // Invert the first chip select pulse-pair. This is used to match the
+    // wake-up behaviour of the Batman IC.
+
+    // Change the bit pattern of the first two 'set pins' instructions
+    ISOSPI_MASTER_PIO->instr_mem[1] = invert ? 0xff02 : 0xff03;
+    ISOSPI_MASTER_PIO->instr_mem[2] = invert ? 0xff03 : 0xff02;
 }
