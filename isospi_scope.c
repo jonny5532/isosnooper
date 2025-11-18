@@ -17,6 +17,16 @@ void isospi_scope_setup(uint rx_pin_base, int invert) {
     //uint32_t buf_end = (uint32_t)(read_buffer + sizeof(read_buffer));
 }
 
+void isospi_scope_flush() {
+    // flush any remaining data in the PIO RX FIFO
+    while(!pio_sm_is_rx_fifo_empty(ISOSPI_SCOPE_PIO, ISOSPI_SCOPE_SM)) {
+        pio_sm_get_blocking(ISOSPI_SCOPE_PIO, ISOSPI_SCOPE_SM);
+    }
+
+    // empty the ISR
+    pio_sm_exec(ISOSPI_SCOPE_PIO, ISOSPI_SCOPE_SM, pio_encode_mov(pio_isr, pio_null));
+}
+
 void print_isospi_scope_output() {
     char buf1[10*32];
     char buf2[10*32];
