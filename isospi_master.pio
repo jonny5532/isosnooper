@@ -12,13 +12,13 @@
 
 ; length of half-bit pulses (multipled by 6.7ns)
 
-.define CS_PULSE_LEN   32
-.define DATA_PULSE_LEN 16
+.define CS_PULSE_LEN   30
+.define DATA_PULSE_LEN 10
 
 ; the reply sampling points (multiplied by 6.7ns)
 
-.define SAMPLE_POS_1   9
-.define SAMPLE_POS_2  29
+.define SAMPLE_POS_1   6
+.define SAMPLE_POS_2  16
 
 ; how long to wait for the reply (multiplied by 20ns)
 
@@ -165,7 +165,7 @@ void isospi_master_program_init(PIO pio, uint sm, uint offset, uint tx_pin_base,
     sm_config_set_in_pin_base(&c, rx_pin_base);
     sm_config_set_in_pin_count(&c, rx_pin_base);
 
-    sm_config_set_clkdiv_int_frac8(&c, 1, 100);
+    sm_config_set_clkdiv_int_frac8(&c, 1, 120);
 
     //sm_config_set_set_pins(&c, rts_pin, 1);
 

@@ -67,76 +67,76 @@ void isosnoop_print_buffer() {
             uint8_t chunk = b & 0xf0;
             b <<= 4;
             
-            switch(chunk>>4) {
-            case 0xa:
-                printf("CS1 ");
-                break;
-            case 0x5:
-                printf("CS0 ");
-                break;
-            case 0x9:
-                printf("1 ");
-                break;
-            case 0x6:
-                printf("0 ");
-                break;
-            case 0x0:
-                printf("_ ");
-                break;
-            default:
-                printf("? ");
-                break;
-            }    
             // switch(chunk>>4) {
-            // case 0:
-            //     printf("0000 ");
+            // case 0xa:
+            //     printf("CS1 ");
             //     break;
-            // case 1:
-            //     printf("0001 ");
+            // case 0x5:
+            //     printf("CS0 ");
             //     break;
-            // case 2:
-            //     printf("0010 ");
+            // case 0x9:
+            //     printf("1 ");
             //     break;
-            // case 3:
-            //     printf("0011 ");
+            // case 0x6:
+            //     printf("0 ");
             //     break;
-            // case 4:
-            //     printf("0100 ");
+            // case 0x0:
+            //     printf("_ ");
             //     break;
-            // case 5:
-            //     printf("0101 ");
-            //     break;
-            // case 6:
-            //     printf("0110 ");
-            //     break;
-            // case 7:
-            //     printf("0111 ");
-            //     break;
-            // case 8:
-            //     printf("1000 ");
-            //     break;
-            // case 9:
-            //     printf("1001 ");
-            //     break;
-            // case 10:
-            //     printf("1010 ");
-            //     break;
-            // case 11:
-            //     printf("1011 ");
-            //     break;
-            // case 12:
-            //     printf("1100 ");
-            //     break;
-            // case 13:
-            //     printf("1101 ");
-            //     break;
-            // case 14:
-            //     printf("1110 ");
-            //     break;
-            // case 15:
-            //     printf("1111 ");
+            // default:
+            //     printf("? ");
             //     break;
             // }    
+            switch(chunk>>4) {
+            case 0:
+                printf("_ ");
+                break;
+            case 1:
+                printf("0001 ");
+                break;
+            case 2:
+                printf("0010 ");
+                break;
+            case 3:
+                printf("0011 ");
+                break;
+            case 4:
+                printf("0100 ");
+                break;
+            case 5:
+                printf("CS0 ");
+                break;
+            case 6:
+                printf("0 ");
+                break;
+            case 7:
+                printf("0111 ");
+                break;
+            case 8:
+                printf("1000 ");
+                break;
+            case 9:
+                printf("1 ");
+                break;
+            case 10:
+                printf("CS1 ");
+                break;
+            case 11:
+                printf("1011 ");
+                break;
+            case 12:
+                printf("1100 ");
+                break;
+            case 13:
+                printf("1101 ");
+                break;
+            case 14:
+                printf("1110 ");
+                break;
+            case 15:
+                printf("1111 ");
+                break;
+            }    
 
 
 

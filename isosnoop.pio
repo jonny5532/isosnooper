@@ -5,9 +5,10 @@
 
 ; the sampling points - multiplied by 6.7ns
 
-.define SAMPLE_POS_1   9  ; must be between 3 and 18 inclusive
-.define SAMPLE_POS_2  29  ; must be between SAMPLE_POS_1+17 and SAMPLE_POST_1+32
-.define SAMPLE_END    45
+.define SAMPLE_POS_1   6  ; must be between 3 and 18 inclusive
+.define SAMPLE_XTRA    0 
+.define SAMPLE_POS_2  16  ; must be between SAMPLE_POS_1+17 and SAMPLE_POST_1+32
+.define SAMPLE_END    32
 
 ; the min recordable gap width - multiplied by 20ns
 
@@ -38,8 +39,8 @@ recv_started:
     ; wait until the first sampling point
     nop [SAMPLE_POS_1 - 3] side 0
     ; first sample
-    in pins, 2 [15] side 1
-    nop [SAMPLE_POS_2 - SAMPLE_POS_1 - 17] side 1
+    in pins, 2 [SAMPLE_XTRA] side 1
+    nop [SAMPLE_POS_2 - SAMPLE_POS_1 - SAMPLE_XTRA - 2] side 1
     ; second sample
     in pins, 2 [SAMPLE_END - SAMPLE_POS_2 - 1] side 0
 
@@ -88,6 +89,7 @@ void isosnoop_pio_setup(PIO pio, uint sm, uint offset, uint rx_pin_base, int inv
 
     // ST thing is 3.42857x slower
     //sm_config_set_clkdiv_int_frac8(&c, 3, 112);
+    sm_config_set_clkdiv_int_frac8(&c, 1, 120);
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
