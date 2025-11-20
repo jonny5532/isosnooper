@@ -160,7 +160,7 @@ void isospi_master_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
     // Shift to right, autopush with threshold 32
     sm_config_set_in_shift(&master_config, false, true, 32);
     sm_config_set_in_pin_base(&master_config, rx_pin_base);
-    sm_config_set_in_pin_count(&master_config, rx_pin_base);
+    sm_config_set_in_pin_count(&master_config, 2);
 
     //sm_config_set_clkdiv_int_frac8(&c, 1, 120);
     sm_config_set_clkdiv_int_frac8(&master_config, 1, 0);
