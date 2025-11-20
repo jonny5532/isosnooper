@@ -12,9 +12,7 @@ void isospi_master_setup(uint tx_pin_base, uint rx_pin_base) {
     // rx_pin_base      is the high rx data pin
     // rx_pin_base + 1  is the low rx data pin
 
-    uint offset = pio_add_program(ISOSPI_MASTER_PIO, &isospi_master_program);
-    isospi_master_program_init(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, offset, tx_pin_base, rx_pin_base);
-    pio_sm_set_enabled(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, true);
+    isospi_master_program_init(ISOSPI_MASTER_PIO, tx_pin_base, rx_pin_base);
 }
 
 void isospi_master_flush() {
@@ -43,10 +41,10 @@ void isospi_tune(
     ISOSPI_MASTER_PIO->instr_mem[offset] = \
         (isospi_master_program_instructions[offset] & 0xe0ff) | ((value & 0x1f) << 8);
 
-    SET_DELAY(isospi_master_offset_cs_high_1, cs_pulse_length - 1);
-    SET_DELAY(isospi_master_offset_cs_high_2, cs_pulse_length - 1);
-    SET_DELAY(isospi_master_offset_cs_low_1, cs_pulse_length - 1);
-    SET_DELAY(isospi_master_offset_cs_low_2, cs_pulse_length - 1);
+    // SET_DELAY(isospi_master_offset_cs_high_1, cs_pulse_length - 1);
+    // SET_DELAY(isospi_master_offset_cs_high_2, cs_pulse_length - 1);
+    // SET_DELAY(isospi_master_offset_cs_low_1, cs_pulse_length - 1);
+    // SET_DELAY(isospi_master_offset_cs_low_2, cs_pulse_length - 1);
 
     SET_DELAY(isospi_master_offset_data_high_1, data_pulse_length - 1);
     SET_DELAY(isospi_master_offset_data_high_2, data_pulse_length - 1);
@@ -54,18 +52,18 @@ void isospi_tune(
     SET_DELAY(isospi_master_offset_data_low_2, data_pulse_length - 1);
 
     SET_DELAY(isospi_master_offset_pre_rx, pre_rx_delay - 1);
-    ISOSPI_MASTER_PIO->instr_mem[isospi_master_offset_set_reply_wait] = 
-        (isospi_master_program_instructions[isospi_master_offset_set_reply_wait] & 0xffe0) | ((reply_wait & 0x1f));
-    SET_DELAY(isospi_master_offset_sample_1, sample_pos_1 - 3);
-    SET_DELAY(isospi_master_offset_sample_2, sample_pos_2 - sample_pos_1 - 1);
-    SET_DELAY(isospi_master_offset_post_rx, post_rx_delay - 1);
+    //ISOSPI_MASTER_PIO->instr_mem[isospi_master_offset_set_reply_wait] = 
+    //    (isospi_master_program_instructions[isospi_master_offset_set_reply_wait] & 0xffe0) | ((reply_wait & 0x1f));
+    //SET_DELAY(isospi_master_offset_sample_1, sample_pos_1 - 3);
+    //SET_DELAY(isospi_master_offset_sample_2, sample_pos_2 - sample_pos_1 - 1);
+    //SET_DELAY(isospi_master_offset_post_rx, post_rx_delay - 1);
 }
 
 bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
-    const uint8_t cs_front_porch = 150; // wait after asserting CS
-    pio_sm_put_blocking(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, cs_front_porch << 24);
 
-    sleep_us(5);
+    isospi_master_cs(true);
+
+    sleep_us(3);
 
     bool valid = true;
     for(size_t i=0; i<len; i++) {
@@ -92,10 +90,10 @@ bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
         sleep_us(1);
     }
 
-    sleep_us(5);
+    sleep_us(1);
 
     // perform final ending chip select
-    pio_sm_exec(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, pio_encode_jmp(isospi_master_offset_ending_chip_select)); 
+    isospi_master_cs(false);
 
     // flush any remaining data
     isospi_master_flush();
@@ -104,16 +102,6 @@ bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
 
     return valid;
 }
-
-void isospi_invert_first_chip_select(bool invert) {
-    // Invert the first chip select pulse-pair. This is used to match the
-    // wake-up behaviour of the Batman IC.
-
-    // Change the bit pattern of the first two 'set pins' instructions
-    ISOSPI_MASTER_PIO->instr_mem[1] = invert ? 0xff02 : 0xff03;
-    ISOSPI_MASTER_PIO->instr_mem[2] = invert ? 0xff03 : 0xff02;
-}
-
 
 bool isospi_write_single_test() {
     // snapshot command (final bit will return something)
@@ -141,7 +129,7 @@ bool isospi_write_single_test() {
     sleep_us(5);
 
     // perform final ending chip select
-    pio_sm_exec(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, pio_encode_jmp(isospi_master_offset_ending_chip_select)); 
+    //pio_sm_exec(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM, pio_encode_jmp(isospi_master_offset_ending_chip_select)); 
 
     // flush any remaining data
     isospi_master_flush();
