@@ -18,8 +18,8 @@
 
 ; the reply sampling points (multiplied by 6.7ns)
 
-.define SAMPLE_POS_1  5  ; 1 - 12 work  (100ns pulses)
-.define SAMPLE_POS_2  20
+.define SAMPLE_POS_1  10   ; 5 - 16 works
+.define SAMPLE_POS_2  25
 
 ; how long to wait for the reply (multiplied by 20ns)
 
@@ -100,8 +100,8 @@ done:
 .program isospi_master_wait_for_high
 .wrap_target
     wait 1 pin 0
-    irq set 0 [20]
-    wait 0 pin 0 [20]
+    irq set 0 [15]
+    wait 0 pin 0 [15]
 .wrap
 
 
@@ -190,7 +190,7 @@ void isospi_master_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
     //////
 
     pio_sm_config c3 = isospi_master_wait_for_high_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c3, rx_pin_base);
+    sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
     sm_config_set_in_pin_count(&c3, 1);
     pio_sm_init(pio, 2, offset, &c3);
 

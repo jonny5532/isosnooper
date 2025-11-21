@@ -73,7 +73,7 @@ bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
         // Each response bit is encoded as a nibble in a 32 bit word
         uint32_t v = pio_sm_get_blocking(ISOSPI_MASTER_PIO, ISOSPI_MASTER_SM);
         for(int r=0; r<8; r++) {
-            uint8_t nibble = (v >> 28) & 0xf0;
+            uint8_t nibble = (v >> 28) & 0xf;
             v <<= 4;
             if(nibble==0b1001) {
                 // bit 1
