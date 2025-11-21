@@ -55,7 +55,7 @@ zero_bit:
 done:
     ; go idle and wait for the lines to settle
   PUBLIC pre_rx:
-    set pins, TX_IDLE [15]
+    set pins, TX_IDLE [12] ; min 10?
 
     ; start the timer
     irq set 1
@@ -100,8 +100,8 @@ done:
 .program isospi_master_wait_for_high
 .wrap_target
     wait 1 pin 0
-    irq set 0 [15]
-    wait 0 pin 0 [15]
+    irq set 0 [29]
+    wait 0 pin 0 [9]
 .wrap
 
 
