@@ -55,7 +55,7 @@ zero_bit:
 done:
     ; go idle and wait for the lines to settle
   PUBLIC pre_rx:
-    set pins, TX_IDLE [10] ; min 10?, too long and we miss the reply
+    set pins, TX_IDLE [15] ; min 10?, too long and we miss the reply
 
     ; start the timer
     irq set 1
@@ -110,7 +110,7 @@ done:
     irq wait 3
 
     wait 1 pin 0
-    irq set 0 [5]
+    irq set 0  ; [3]
     wait 0 pin 0
 .wrap
 
