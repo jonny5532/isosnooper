@@ -55,7 +55,7 @@ zero_bit:
 done:
     ; go idle and wait for the lines to settle
   PUBLIC pre_rx:
-    set pins, TX_IDLE [12] ; min 10?
+    set pins, TX_IDLE [10] ; min 10?, too long and we miss the reply
 
     ; start the timer
     irq set 1
@@ -63,9 +63,15 @@ done:
     ; clear any pending irq
     irq clear 0
 
+    ; wake up the wait-for-highers
+    irq clear 3
+
     ; wait for a bit to start
   PUBLIC sample_1:
     wait 1 irq 0 [SAMPLE_POS_1 - 1]
+
+    ; pause the wait-for-highers
+    ;irq set 3 
 
     ; first sample (also store it in x for later)
     mov x, pins
@@ -76,6 +82,7 @@ done:
     mov y, pins
     in y, 2
 
+    ; wait for the timer to finish
     wait 1 irq 2 [3]
 .wrap
 
@@ -99,9 +106,12 @@ done:
 
 .program isospi_master_wait_for_high
 .wrap_target
+    ; wait to be woken up (irq 3 gets cleared)
+    irq wait 3
+
     wait 1 pin 0
-    irq set 0 [29]
-    wait 0 pin 0 [9]
+    irq set 0 [5]
+    wait 0 pin 0
 .wrap
 
 
