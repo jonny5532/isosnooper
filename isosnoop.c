@@ -6,8 +6,8 @@
 
 #include <stdio.h>
 
-#define ISOSNOOP_MASTER_PIO pio1
-#define ISOSNOOP_MASTER_SM 0
+#define ISOSNOOP_PIO pio1
+#define ISOSNOOP_SM 0
 
 #define PIO_IRQ_TO_USE 0
 #define DMA_IRQ_TO_USE 0
@@ -16,14 +16,16 @@
 static uint dma_channel_rx;
 dma_channel_hw_t *dma_chan;
 
-char read_buffer[256] __attribute__((aligned(2048)));
+#define ISOSNOOP_BUFFER_BITS 10 // 2**n byte buffer
+
+char read_buffer[1<<ISOSNOOP_BUFFER_BITS] __attribute__((aligned(1<<ISOSNOOP_BUFFER_BITS)));
 uint32_t last_write_addr;
 
 void isosnoop_dma_setup(PIO pio, uint sm);
 
 void isosnoop_setup(uint rx_pin_base, int invert, uint sampling_pin) {
-    isosnoop_pio_setup(ISOSNOOP_MASTER_PIO, rx_pin_base, invert, sampling_pin);
-    isosnoop_dma_setup(ISOSNOOP_MASTER_PIO, ISOSNOOP_MASTER_SM);
+    isosnoop_pio_setup(ISOSNOOP_PIO, rx_pin_base, invert, sampling_pin);
+    isosnoop_dma_setup(ISOSNOOP_PIO, ISOSNOOP_SM);
 
     dma_chan = dma_channel_hw_addr(dma_channel_rx);
     last_write_addr = dma_chan->write_addr;
@@ -51,8 +53,8 @@ void isosnoop_dma_setup(PIO pio, uint sm) {
 
     channel_config_set_dreq(&config_rx, pio_get_dreq(pio, sm, false));
 
-    // enable dma in ring buffer mode with 8 bit size
-    channel_config_set_ring(&config_rx, true, 8); // 2**8 = 256 bytes
+    // enable dma in ring buffer mode with specified bit size
+    channel_config_set_ring(&config_rx, true, ISOSNOOP_BUFFER_BITS);
     // configure dma to read from pio fifo
     dma_channel_configure(dma_channel_rx, &config_rx, read_buffer, (io_rw_8*)&pio->rxf[sm] + 0, dma_encode_endless_transfer_count(), true); // dma started
 }
@@ -61,7 +63,10 @@ void isosnoop_print_buffer() {
     uint32_t write_addr = dma_chan->write_addr;
     while(last_write_addr != write_addr) {
         uint8_t b = *((uint8_t *)last_write_addr);
-        last_write_addr = (last_write_addr + 1) & ~0x100; // wrap within buffer
+        // Increment last_write_addr, wrapping within the (aligned) buffer
+        last_write_addr = 
+            (last_write_addr & ~((1<<ISOSNOOP_BUFFER_BITS)-1))
+            | ((last_write_addr + 1) & ((1<<ISOSNOOP_BUFFER_BITS)-1));
         for(int i=0;i<2;i++) {
             uint8_t chunk = b & 0xf0;
             b <<= 4;
@@ -155,5 +160,9 @@ void isosnoop_print_buffer() {
             // }
         }
     }
+
+    // empty the ISR (this will throw away the sample that may be sitting in it)
+    //pio_sm_exec(ISOSNOOP_PIO, ISOSNOOP_SM, pio_encode_mov(pio_isr, pio_null));
+
     printf("\n");
 }
