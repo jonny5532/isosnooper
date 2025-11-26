@@ -70,9 +70,6 @@ done:
   PUBLIC sample_1:
     wait 1 irq 0 [SAMPLE_POS_1 - 1]
 
-    ; pause the wait-for-highers
-    ;irq set 3 
-
     ; first sample (also store it in x for later)
     mov x, pins
   PUBLIC sample_2:
@@ -83,7 +80,8 @@ done:
     in y, 2
 
     ; wait for the timer to finish
-    wait 1 irq 2 [3]
+    ;wait 1 irq 2 [3]
+    irq wait 2 [3]
 .wrap
 
 
@@ -94,10 +92,10 @@ done:
     out y, 2
 
     ; do the chip select pattern
-  PUBLIC cs_high_1:
+  ;PUBLIC cs_high_1:
     mov pins x  [CS_PULSE_LEN_A-1]
     mov pins x  [CS_PULSE_LEN_B-1]
-  PUBLIC cs_low_1:
+  ;PUBLIC cs_low_1:
     mov pins y  [CS_PULSE_LEN_A-1]
     mov pins y  [CS_PULSE_LEN_B-1]
     set pins TX_IDLE [31]
@@ -118,12 +116,12 @@ done:
 .program isospi_master_wait_for_gap
 .wrap_target
     ; wait to be woken up
-    wait 1 irq 1 [30]
+    wait 1 irq 1 [31]
     ; after a while, trigger the receiver
     irq set 0 [31]
     nop [31]
     ; then trigger the next send
-    irq set 2
+    irq clear 2
 .wrap
 
 
@@ -227,7 +225,7 @@ void isospi_master_cs(bool start) {
   // Send a CS
   pio_sm_put_blocking(master_pio, 0, (start ? 0b1110 : 0b1011) << 28);
 
-  sleep_us(1);
+  sleep_us(2);
 
   // Load the master program back into sm0
   pio_sm_init(master_pio, 0, master_offset, &master_config);

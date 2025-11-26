@@ -6,10 +6,8 @@ void isospi_tune(
     uint8_t cs_pulse_length,
     uint8_t data_pulse_length,
     uint8_t pre_rx_delay,
-    uint8_t reply_wait,
     uint8_t sample_pos_1,
-    uint8_t sample_pos_2,
-    uint8_t post_rx_delay
+    uint8_t sample_pos_2
 );
 int isospi_write_tests(int count);
 void isospi_calibrate();

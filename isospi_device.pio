@@ -1,0 +1,158 @@
+.pio_version 0
+
+.define PUBLIC TX_HIGH 0b11
+.define PUBLIC TX_LOW  0b10
+.define PUBLIC TX_IDLE 0b00
+
+.define DATA_PULSE_LEN   15
+
+.program isospi_device
+.wrap_target
+
+    ; wait for something
+recv:
+    mov x, pins
+    jmp !x, recv
+
+
+    nop [31]
+    nop [31]
+
+    set pins, TX_LOW  [DATA_PULSE_LEN-1]
+    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_IDLE [15]
+
+    ; wait for something
+recv2:
+    mov x, pins
+    jmp !x, recv2
+
+    nop [31]
+    nop [31]
+
+    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_LOW  [DATA_PULSE_LEN-1]
+    set pins, TX_IDLE [15]
+
+    ; wait for something
+recv3:
+    mov x, pins
+    jmp !x, recv3
+
+    nop [31]
+    nop [31]
+
+    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_LOW  [DATA_PULSE_LEN-1]
+    set pins, TX_IDLE [15]
+
+
+.wrap
+
+.program isospi_device_wait_for_cs
+.wrap_target
+begin:
+    ; wait for a low
+    wait 1 pin 0 [31]
+
+    set y, 0b01
+    mov x, pins
+
+    jmp x!=y begin
+    
+    nop [22]
+    set y, 0b10 [22]
+    mov x, pins
+
+    jmp x!=y begin
+
+    wait 0 pin 1 [31]
+
+    ; got a CS then?
+
+    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_LOW  [DATA_PULSE_LEN-1]
+    set pins, TX_IDLE [15]
+.wrap
+
+.program isospi_wait_for_bit
+.wrap_target
+begin:
+    ; wait for a high
+    wait 1 pin 0 [7]
+    ; sample again
+    mov x, pins
+    ; now zero, bail
+    jmp !x begin
+    
+    nop [15]
+    ;jmp pin 
+
+
+
+    set y, 0b10
+    mov x, pins
+
+    jmp x!=y begin
+    
+    nop [31]
+    nop [31]
+
+    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_LOW  [DATA_PULSE_LEN-1]
+    set pins, TX_IDLE [15]
+
+
+% c-sdk {
+
+void isospi_device_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
+    // Outputs
+    pio_gpio_init(pio, tx_pin_base);
+    pio_gpio_init(pio, tx_pin_base + 1);
+
+    // Inputs (we don't need the pio to own these)
+    //gpio_init(rx_pin_base);
+    //gpio_set_dir(rx_pin_base, GPIO_IN);
+    //gpio_pull_up(rx_pin_base);
+
+    //gpio_init(rx_pin_base + 1);
+    //gpio_set_dir(rx_pin_base + 1, GPIO_IN);
+    //gpio_pull_up(rx_pin_base + 1);
+
+    // invert both RX pins
+    //gpio_set_inover(rx_pin_base, GPIO_OVERRIDE_INVERT);
+    //gpio_set_inover(rx_pin_base + 1, GPIO_OVERRIDE_INVERT);
+
+    // Set outputs as PIO outputs
+    //pio_sm_set_consecutive_pindirs(pio, 0, tx_pin_base, 2, true);
+
+    //uint offset = pio_add_program(pio, &isospi_device_program);
+    // pio_sm_config c = isospi_device_program_get_default_config(offset);
+    // sm_config_set_in_pin_base(&c, rx_pin_base);
+    // sm_config_set_in_pin_count(&c, 2);
+    // sm_config_set_jmp_pin(&c, rx_pin_base);
+    // //sm_config_set_out_pins(&c, tx_pin_base, 2);
+    // sm_config_set_set_pins(&c, tx_pin_base, 2);
+    // sm_config_set_clkdiv_int_frac8(&c, 1, 0);
+    // pio_sm_init(pio, 0, offset, &c);
+
+    //////
+
+    pio_sm_set_consecutive_pindirs(pio, 1, tx_pin_base, 2, true);
+
+    uint offset = pio_add_program(pio, &isospi_device_wait_for_cs_program);
+    pio_sm_config c2 = isospi_device_wait_for_cs_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c2, rx_pin_base);
+    sm_config_set_in_pin_count(&c2, 2);
+    //sm_config_set_jmp_pin(&c2, rx_pin_base);
+    //sm_config_set_out_pins(&c2, tx_pin_base, 2);
+    sm_config_set_set_pins(&c2, tx_pin_base, 2);
+    sm_config_set_clkdiv_int_frac8(&c2, 1, 0);
+    pio_sm_init(pio, 1, offset, &c2);
+
+    //////
+
+    //pio_sm_set_enabled(pio, 0, true);
+    pio_sm_set_enabled(pio, 1, true);
+}
+%}

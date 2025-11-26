@@ -3,6 +3,7 @@
 
 #include "isospi_master.h"
 #include "isospi_scope.h"
+#include "isospi_device.h"
 #include "isosnoop.h"
 
 #ifndef LED_DELAY_MS
@@ -16,9 +17,10 @@ int main() {
     //while (!stdio_usb_connected()) {}
     sleep_ms(4000);
     
-    isospi_master_setup(20, 2); // pins 20+21
+    isospi_master_setup(20, 18); // pins 20+21
     isosnoop_setup(18, true, 16);
-    isospi_scope_setup(18, true);
+    isospi_device_setup(26, 18);
+    //isospi_scope_setup(18, true);
     
     // printf("waiting...\n");
 // sleep_ms(5000);
@@ -28,13 +30,23 @@ int main() {
     //     isosnoop_print_buffer();
     // }
 
+    // isospi_tune(
+    //     123,
+    //     123,
+    //     15,
+    //     123,
+    //     123,
+    //     123
+    // );
+
+
     printf("Running tests...\n");
     int passed = isospi_write_tests(50);
     printf("Tests passed: %d/50\n", passed);
 
-    isospi_calibrate();
-    
-    sleep_ms(10000);
+    //isospi_calibrate();
+
+    sleep_ms(4000);
 
     char WAKEUP[] = {0x2a, 0xd4};
     char UNMUTE[] = {0x21, 0xf2};
@@ -46,32 +58,35 @@ int main() {
         char tx[] = {0x2a, 0xd4};
         char rx[8] = {0};
 
-        isospi_scope_flush();
+        //isospi_scope_flush();
         //bool valid = isospi_write_read_blocking(tx, rx, sizeof(tx));
 
-        isospi_tune(
-            120, // prescaler (0-lots)
-            30,  // cs_pulse_length (1-32)
-            10,  // data_pulse_length (1-32)
-            16,  // pre_rx_delay (1-32)
-            30,  // reply_wait (1-32)
-            6,   // sample_pos_1 
-            16,  // sample_pos_2
-            32   // post_rx_delay (1-32)
-        );
+        // isospi_tune(
+        //     120, // prescaler (0-lots)
+        //     30,  // cs_pulse_length (1-32)
+        //     10,  // data_pulse_length (1-32)
+        //     16,  // pre_rx_delay (1-32)
+        //     30,  // reply_wait (1-32)
+        //     6,   // sample_pos_1 
+        //     16,  // sample_pos_2
+        //     32   // post_rx_delay (1-32)
+        // );
         
         //isospi_invert_first_chip_select(true);
-        isospi_write_read_blocking(WAKEUP, rx, sizeof(tx));
+        bool valid = isospi_write_read_blocking(WAKEUP, rx, sizeof(tx));
+
+        printf("rx: %02x %02x %d\n", rx[0], rx[1], valid ? 1 : 0);
+
         //isospi_invert_first_chip_select(false);
-        isospi_write_read_blocking(UNMUTE, rx, sizeof(UNMUTE));
-        isospi_write_read_blocking(SNAPSHOT, rx, sizeof(SNAPSHOT));
-        isospi_write_read_blocking(READ_A, rx, sizeof(READ_A));
+        // isospi_write_read_blocking(UNMUTE, rx, sizeof(UNMUTE));
+        // isospi_write_read_blocking(SNAPSHOT, rx, sizeof(SNAPSHOT));
+        // isospi_write_read_blocking(READ_A, rx, sizeof(READ_A));
 
         sleep_us(2);
 
         isosnoop_print_buffer();
 
-        print_isospi_scope_output();
+        //print_isospi_scope_output();
 
         sleep_us(1000);
     }

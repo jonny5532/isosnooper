@@ -15,11 +15,13 @@ add_executable(isosnooper
     isosnoop.c
     isospi_master.c
     isospi_scope.c
+    isospi_device.c
     )
 
 pico_generate_pio_header(isosnooper ${CMAKE_CURRENT_LIST_DIR}/isospi_master.pio)
 pico_generate_pio_header(isosnooper ${CMAKE_CURRENT_LIST_DIR}/isosnoop.pio)
 pico_generate_pio_header(isosnooper ${CMAKE_CURRENT_LIST_DIR}/isospi_scope.pio)
+pico_generate_pio_header(isosnooper ${CMAKE_CURRENT_LIST_DIR}/isospi_device.pio)
 
 # pull in common dependencies
 target_link_libraries(isosnooper pico_stdlib hardware_dma hardware_pio)
