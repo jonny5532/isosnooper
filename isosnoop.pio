@@ -61,6 +61,14 @@ received_something:
     wait 0 pin 0 [12]
 .wrap
 
+.program isosnoop_wait_for_low
+
+.wrap_target
+    wait 0 pin 0
+    irq set 0 [20]
+    wait 1 pin 0 [12]
+.wrap
+
 .program isosnoop_wait_for_gap
 .set 1
 
@@ -140,9 +148,24 @@ void isosnoop_pio_setup(PIO pio, uint rx_pin_base, int invert, uint sampling_pin
 
     ////
 
-    offset = pio_add_program(pio, &isosnoop_wait_for_high_program);
-    pio_sm_config c2 = isosnoop_wait_for_high_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c2, rx_pin_base);
+    //offset = pio_add_program(pio, &isosnoop_wait_for_high_program);
+    //pio_sm_config c2 = isosnoop_wait_for_high_program_get_default_config(offset);
+    //sm_config_set_in_pin_base(&c2, rx_pin_base);
+    //sm_config_set_in_pin_count(&c2, 1);
+    //sm_config_set_clkdiv_int_frac8(&c2, 1, 0);
+
+    gpio_init(10);
+    gpio_set_dir(10, GPIO_IN);
+    gpio_pull_up(10);
+
+    gpio_init(15);
+    gpio_set_dir(15, GPIO_OUT);
+    gpio_set_drive_strength(15, GPIO_DRIVE_STRENGTH_12MA);
+    gpio_put(15, 1);
+
+    offset = pio_add_program(pio, &isosnoop_wait_for_low_program);
+    pio_sm_config c2 = isosnoop_wait_for_low_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c2, 10); // rx_pin_base); // use GPIO10 now
     sm_config_set_in_pin_count(&c2, 1);
     sm_config_set_clkdiv_int_frac8(&c2, 1, 0);
 
@@ -150,18 +173,17 @@ void isosnoop_pio_setup(PIO pio, uint rx_pin_base, int invert, uint sampling_pin
 
     ////
 
-    offset = pio_add_program(pio, &isosnoop_wait_for_high_program);
-    pio_sm_config c3 = isosnoop_wait_for_high_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
-    sm_config_set_in_pin_count(&c3, 1);
-    sm_config_set_clkdiv_int_frac8(&c3, 1, 0);
+    //pio_sm_config c3 = isosnoop_wait_for_high_program_get_default_config(offset);
+    //sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
+    //sm_config_set_in_pin_count(&c3, 1);
+    //sm_config_set_clkdiv_int_frac8(&c3, 1, 0);
 
     //int sampling_pin2 = 26;
     //pio_gpio_init(pio, sampling_pin2);
     //pio_sm_set_consecutive_pindirs(pio, 2, sampling_pin2, 1, true);
     //sm_config_set_sideset_pins(&c3, sampling_pin2);
 
-    pio_sm_init(pio, 2, offset, &c3);
+    //pio_sm_init(pio, 2, offset, &c3);
 
     ////
 

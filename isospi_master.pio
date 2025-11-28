@@ -113,6 +113,17 @@ done:
 .wrap
 
 
+.program isospi_master_wait_for_low
+.wrap_target
+    ; wait to be woken up (irq 3 gets cleared)
+    irq wait 3
+
+    wait 0 pin 0
+    irq set 0  ; [3]
+    wait 1 pin 0
+.wrap
+
+
 .program isospi_master_wait_for_gap
 .wrap_target
     ; wait to be woken up
@@ -189,18 +200,24 @@ void isospi_master_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
 
     //////
 
-    uint32_t offset = pio_add_program(pio, &isospi_master_wait_for_high_program);
-    pio_sm_config c2 = isospi_master_wait_for_high_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c2, rx_pin_base);
+    uint32_t offset = pio_add_program(pio, &isospi_master_wait_for_low_program);
+    pio_sm_config c2 = isospi_master_wait_for_low_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c2, 10);
     sm_config_set_in_pin_count(&c2, 1);
     pio_sm_init(pio, 1, offset, &c2);
 
+    //uint32_t offset = pio_add_program(pio, &isospi_master_wait_for_high_program);
+    //pio_sm_config c2 = isospi_master_wait_for_high_program_get_default_config(offset);
+    //sm_config_set_in_pin_base(&c2, rx_pin_base);
+    //sm_config_set_in_pin_count(&c2, 1);
+    //pio_sm_init(pio, 1, offset, &c2);
+
     //////
 
-    pio_sm_config c3 = isospi_master_wait_for_high_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
-    sm_config_set_in_pin_count(&c3, 1);
-    pio_sm_init(pio, 2, offset, &c3);
+    //pio_sm_config c3 = isospi_master_wait_for_high_program_get_default_config(offset);
+    //sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
+    //sm_config_set_in_pin_count(&c3, 1);
+    //pio_sm_init(pio, 2, offset, &c3);
 
     //////
 

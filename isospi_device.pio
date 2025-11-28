@@ -124,35 +124,35 @@ void isospi_device_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
     //gpio_set_inover(rx_pin_base + 1, GPIO_OVERRIDE_INVERT);
 
     // Set outputs as PIO outputs
-    //pio_sm_set_consecutive_pindirs(pio, 0, tx_pin_base, 2, true);
+    pio_sm_set_consecutive_pindirs(pio, 0, tx_pin_base, 2, true);
 
-    //uint offset = pio_add_program(pio, &isospi_device_program);
-    // pio_sm_config c = isospi_device_program_get_default_config(offset);
-    // sm_config_set_in_pin_base(&c, rx_pin_base);
-    // sm_config_set_in_pin_count(&c, 2);
-    // sm_config_set_jmp_pin(&c, rx_pin_base);
-    // //sm_config_set_out_pins(&c, tx_pin_base, 2);
-    // sm_config_set_set_pins(&c, tx_pin_base, 2);
-    // sm_config_set_clkdiv_int_frac8(&c, 1, 0);
-    // pio_sm_init(pio, 0, offset, &c);
-
-    //////
-
-    pio_sm_set_consecutive_pindirs(pio, 1, tx_pin_base, 2, true);
-
-    uint offset = pio_add_program(pio, &isospi_device_wait_for_cs_program);
-    pio_sm_config c2 = isospi_device_wait_for_cs_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c2, rx_pin_base);
-    sm_config_set_in_pin_count(&c2, 2);
-    //sm_config_set_jmp_pin(&c2, rx_pin_base);
-    //sm_config_set_out_pins(&c2, tx_pin_base, 2);
-    sm_config_set_set_pins(&c2, tx_pin_base, 2);
-    sm_config_set_clkdiv_int_frac8(&c2, 1, 0);
-    pio_sm_init(pio, 1, offset, &c2);
+    uint offset = pio_add_program(pio, &isospi_device_program);
+    pio_sm_config c = isospi_device_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c, rx_pin_base);
+    sm_config_set_in_pin_count(&c, 2);
+    sm_config_set_jmp_pin(&c, rx_pin_base);
+    //sm_config_set_out_pins(&c, tx_pin_base, 2);
+    sm_config_set_set_pins(&c, tx_pin_base, 2);
+    sm_config_set_clkdiv_int_frac8(&c, 1, 0);
+    pio_sm_init(pio, 0, offset, &c);
 
     //////
 
-    //pio_sm_set_enabled(pio, 0, true);
-    pio_sm_set_enabled(pio, 1, true);
+    //pio_sm_set_consecutive_pindirs(pio, 1, tx_pin_base, 2, true);
+
+    //uint offset = pio_add_program(pio, &isospi_device_wait_for_cs_program);
+    //pio_sm_config c2 = isospi_device_wait_for_cs_program_get_default_config(offset);
+    //sm_config_set_in_pin_base(&c2, rx_pin_base);
+    //sm_config_set_in_pin_count(&c2, 2);
+    ////sm_config_set_jmp_pin(&c2, rx_pin_base);
+    ////sm_config_set_out_pins(&c2, tx_pin_base, 2);
+    //sm_config_set_set_pins(&c2, tx_pin_base, 2);
+    //sm_config_set_clkdiv_int_frac8(&c2, 1, 0);
+    //pio_sm_init(pio, 1, offset, &c2);
+
+    //////
+
+    pio_sm_set_enabled(pio, 0, true);
+    //pio_sm_set_enabled(pio, 1, true);
 }
 %}
