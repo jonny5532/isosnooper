@@ -8,11 +8,11 @@
 #define ISOSPI_MASTER_SM 0
 
 void isospi_master_setup(uint tx_pin_base, uint rx_pin_base) {
-    // tx_pin_base      is the driver enable pin (active high)
-    // tx_pin_base + 1  is the tx data pin
+    // tx_pin_base      is the tx data pin (noninverting)
+    // tx_pin_base + 1  is the driver enable pin (active high)
 
-    // rx_pin_base      is the high rx data pin
-    // rx_pin_base + 1  is the low rx data pin
+    // rx_pin_base      is the low rx data pin
+    // rx_pin_base + 1  is the high rx data pin
 
     isospi_master_program_init(ISOSPI_MASTER_PIO, tx_pin_base, rx_pin_base);
 }
@@ -77,6 +77,8 @@ bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
 
     sleep_us(3);
 
+    char log[1000];
+
     bool valid = true;
     int carry_bit = 0;
     for(size_t i=0; i<len; i++) {
@@ -88,6 +90,7 @@ bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
         for(int r=0; r<8; r++) {
             uint8_t nibble = (v >> 28) & 0xf;
             v <<= 4;
+            log[i*8 + r] = nibble > 9 ? 'a' + (nibble - 10) : '0' + nibble;
             if(nibble==0b1001) {
                 // bit 1
                 in_buf[i] = (in_buf[i] << 1) | 0x1;
@@ -105,8 +108,11 @@ bool isospi_write_read_blocking(char* out_buf, char* in_buf, size_t len) {
         in_buf[i] = (in_buf[i] >> 1) | (carry_bit << 7);
         carry_bit = new_carry;
 
-        sleep_us(1);
+        // an inter-byte delay gives the other end time to process
+        sleep_us(2);
     }
+    log[len*8] = '\0';
+    printf("rx nibbles: %s\n", log);
 
     sleep_us(1);
 

@@ -6,48 +6,67 @@
 
 .define DATA_PULSE_LEN   15
 
+.define SAMPLE_POS_1  5
+.define SAMPLE_POS_2  20
+
+
 .program isospi_device
+.side_set 1
 .wrap_target
+begin:
+    ; clear any pending irq
+    irq clear 0 side 0
 
-    ; wait for something
-recv:
-    mov x, pins
-    jmp !x, recv
+    ; Wait for an interrupt from one of the pulse detectors
+    wait 1 irq 0 side 0 [SAMPLE_POS_1 - 1]
 
+    ; First sample
+    mov x, pins side 1 [SAMPLE_POS_2 - SAMPLE_POS_1 - 1]
+    ; Second sample
+    mov y, pins side 0 [10]
+    ; If different, we got a bit
+    jmp x!=y got_bit side 0
+    ; If both zero, restart
+    jmp !x begin side 0
 
-    nop [31]
-    nop [31]
+    ; Is a CS1
+    irq set 2 side 0
+    mov isr, null side 0 ; empty ISR
 
-    set pins, TX_LOW  [DATA_PULSE_LEN-1]
-    set pins, TX_HIGH [DATA_PULSE_LEN-1]
-    set pins, TX_IDLE [15]
+    jmp begin side 0
 
-    ; wait for something
-recv2:
-    mov x, pins
-    jmp !x, recv2
+got_bit:
+    in x, 1 side 0 [15]
 
-    nop [31]
-    nop [31]
+    ; if there's something to send
+    jmp !osre send_bit side 0 [15]
+    ; nothing to send, just ack the bit
+    jmp begin side 0
 
-    set pins, TX_HIGH [DATA_PULSE_LEN-1]
-    set pins, TX_LOW  [DATA_PULSE_LEN-1]
-    set pins, TX_IDLE [15]
-
-    ; wait for something
-recv3:
-    mov x, pins
-    jmp !x, recv3
-
-    nop [31]
-    nop [31]
-
-    set pins, TX_HIGH [DATA_PULSE_LEN-1]
-    set pins, TX_LOW  [DATA_PULSE_LEN-1]
-    set pins, TX_IDLE [15]
-
+send_bit:
+    ; send the bit
+    out pins, 2 [DATA_PULSE_LEN-1] side 0
+    ; idle time
+    out pins, 2 [DATA_PULSE_LEN-1] side 0
+    set pins, TX_IDLE [15] side 0
 
 .wrap
+
+
+
+
+
+
+
+.program isospi_device_wait_for_high
+
+.wrap_target
+    wait 1 pin 0
+    irq set 0 [20]
+    wait 0 pin 0 [12]
+.wrap
+
+
 
 .program isospi_device_wait_for_cs
 .wrap_target
@@ -128,31 +147,46 @@ void isospi_device_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
 
     uint offset = pio_add_program(pio, &isospi_device_program);
     pio_sm_config c = isospi_device_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c, rx_pin_base);
-    sm_config_set_in_pin_count(&c, 2);
-    sm_config_set_jmp_pin(&c, rx_pin_base);
-    //sm_config_set_out_pins(&c, tx_pin_base, 2);
+    sm_config_set_in_shift(&c, false, true, 8);
+    sm_config_set_in_pin_base(&c, rx_pin_base + 1);
+    sm_config_set_in_pin_count(&c, 1); // only interested in the high bits
+    sm_config_set_out_shift(&c, false, true, 32);
+    sm_config_set_out_pins(&c, tx_pin_base, 2);
     sm_config_set_set_pins(&c, tx_pin_base, 2);
     sm_config_set_clkdiv_int_frac8(&c, 1, 0);
+
+    int sampling_pin = 17;
+    pio_gpio_init(pio, sampling_pin);
+    pio_sm_set_consecutive_pindirs(pio, 0, sampling_pin, 1, true);
+    sm_config_set_sideset_pins(&c, sampling_pin);
+
     pio_sm_init(pio, 0, offset, &c);
 
-    //////
-
-    //pio_sm_set_consecutive_pindirs(pio, 1, tx_pin_base, 2, true);
-
-    //uint offset = pio_add_program(pio, &isospi_device_wait_for_cs_program);
-    //pio_sm_config c2 = isospi_device_wait_for_cs_program_get_default_config(offset);
-    //sm_config_set_in_pin_base(&c2, rx_pin_base);
-    //sm_config_set_in_pin_count(&c2, 2);
-    ////sm_config_set_jmp_pin(&c2, rx_pin_base);
-    ////sm_config_set_out_pins(&c2, tx_pin_base, 2);
-    //sm_config_set_set_pins(&c2, tx_pin_base, 2);
-    //sm_config_set_clkdiv_int_frac8(&c2, 1, 0);
-    //pio_sm_init(pio, 1, offset, &c2);
+    // interrupt when RX FIFO gets data
+    //pio_set_irq0_source_enabled(pio, PIO_INTR_SM0_RXNEMPTY_BITS, true);
 
     //////
+
+    offset = pio_add_program(pio, &isospi_device_wait_for_high_program);
+    pio_sm_config c2 = isospi_device_wait_for_high_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c2, rx_pin_base);
+    sm_config_set_in_pin_count(&c2, 1);
+    sm_config_set_clkdiv_int_frac8(&c2, 1, 0);
+    pio_sm_init(pio, 1, offset, &c2);
+
+    //////
+
+    pio_sm_config c3 = isospi_device_wait_for_high_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
+    sm_config_set_in_pin_count(&c3, 1);
+    sm_config_set_clkdiv_int_frac8(&c3, 1, 0);
+    pio_sm_init(pio, 2, offset, &c3);
+
+    //////
+
 
     pio_sm_set_enabled(pio, 0, true);
-    //pio_sm_set_enabled(pio, 1, true);
+    pio_sm_set_enabled(pio, 1, true);
+    pio_sm_set_enabled(pio, 2, true);
 }
 %}

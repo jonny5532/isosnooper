@@ -24,7 +24,7 @@ pico_generate_pio_header(isosnooper ${CMAKE_CURRENT_LIST_DIR}/isospi_scope.pio)
 pico_generate_pio_header(isosnooper ${CMAKE_CURRENT_LIST_DIR}/isospi_device.pio)
 
 # pull in common dependencies
-target_link_libraries(isosnooper pico_stdlib hardware_dma hardware_pio)
+target_link_libraries(isosnooper pico_stdlib pico_multicore hardware_dma hardware_pio)
 
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS 3000)
 

@@ -27,61 +27,63 @@
 
 
 .program isospi_master
+.side_set 1
 .wrap_target
 
 do_bit:
 
     ; read a bit
-    out x, 1
+    out x, 1 side 0
 
-    jmp !x zero_bit
+    jmp !x zero_bit side 0
 
     ; output a 1
   PUBLIC data_high_1:
-    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_HIGH side 0 [DATA_PULSE_LEN-1]
   PUBLIC data_low_1:
-    set pins, TX_LOW  [DATA_PULSE_LEN-1]
-    jmp done
+    set pins, TX_LOW side 0 [DATA_PULSE_LEN-1]
+    jmp done side 0
 
     ; cheeky void space
 
 zero_bit:
     ; output a 0
   PUBLIC data_low_2:
-    set pins, TX_LOW  [DATA_PULSE_LEN-1]
+    set pins, TX_LOW side 0 [DATA_PULSE_LEN-1]
   PUBLIC data_high_2:
-    set pins, TX_HIGH [DATA_PULSE_LEN-1]
+    set pins, TX_HIGH side 0 [DATA_PULSE_LEN-1]
 
 done:
     ; go idle and wait for the lines to settle
   PUBLIC pre_rx:
-    set pins, TX_IDLE [15] ; min 10?, too long and we miss the reply
+    set pins, TX_IDLE side 0 [10] ; min 10?, too long and we miss the reply
+    ; at 300mhz, 6 - 14 works
 
     ; start the timer
-    irq set 1
+    irq set 1 side 0
 
     ; clear any pending irq
-    irq clear 0
+    irq clear 0 side 0
 
     ; wake up the wait-for-highers
-    irq clear 3
+    irq clear 3 side 0
 
     ; wait for a bit to start
   PUBLIC sample_1:
-    wait 1 irq 0 [SAMPLE_POS_1 - 1]
+    wait 1 irq 0 side 0 [SAMPLE_POS_1 - 1]
 
     ; first sample (also store it in x for later)
-    mov x, pins
+    mov x, pins side 1
   PUBLIC sample_2:
-    in x, 2 [SAMPLE_POS_2 - SAMPLE_POS_1 - 2]
+    in x, 2 side 1 [SAMPLE_POS_2 - SAMPLE_POS_1 - 2]
 
     ; second sample (also store it in y for later)
-    mov y, pins
-    in y, 2
+    mov y, pins side 0
+    in y, 2 side 0
 
     ; wait for the timer to finish
     ;wait 1 irq 2 [3]
-    irq wait 2 [3]
+    irq wait 2 side 0 [3]
 .wrap
 
 
@@ -108,8 +110,8 @@ done:
     irq wait 3
 
     wait 1 pin 0
-    irq set 0  ; [3]
-    wait 0 pin 0
+    irq set 0  [20] ; [3]
+    wait 0 pin 0; [12]
 .wrap
 
 
@@ -129,8 +131,11 @@ done:
     ; wait to be woken up
     wait 1 irq 1 [31]
     ; after a while, trigger the receiver
-    irq set 0 [31]
+
+    ; at 300mhz with isodevice, the nop needs to come first
     nop [31]
+    irq set 0 [31]
+
     ; then trigger the next send
     irq clear 2
 .wrap
@@ -181,6 +186,11 @@ void isospi_master_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
     sm_config_set_in_pin_base(&master_config, rx_pin_base);
     sm_config_set_in_pin_count(&master_config, 2);
 
+    int sampling_pin = 22; // just after the TX pins
+    pio_gpio_init(pio, sampling_pin);
+    pio_sm_set_consecutive_pindirs(pio, 0, sampling_pin, 1, true);
+    sm_config_set_sideset_pins(&master_config, sampling_pin);
+
     //sm_config_set_clkdiv_int_frac8(&c, 1, 120);
     sm_config_set_clkdiv_int_frac8(&master_config, 1, 0);
 
@@ -200,24 +210,24 @@ void isospi_master_program_init(PIO pio, uint tx_pin_base, uint rx_pin_base) {
 
     //////
 
-    uint32_t offset = pio_add_program(pio, &isospi_master_wait_for_low_program);
-    pio_sm_config c2 = isospi_master_wait_for_low_program_get_default_config(offset);
-    sm_config_set_in_pin_base(&c2, 10);
-    sm_config_set_in_pin_count(&c2, 1);
-    pio_sm_init(pio, 1, offset, &c2);
-
-    //uint32_t offset = pio_add_program(pio, &isospi_master_wait_for_high_program);
-    //pio_sm_config c2 = isospi_master_wait_for_high_program_get_default_config(offset);
-    //sm_config_set_in_pin_base(&c2, rx_pin_base);
+    //uint32_t offset = pio_add_program(pio, &isospi_master_wait_for_low_program);
+    //pio_sm_config c2 = isospi_master_wait_for_low_program_get_default_config(offset);
+    //sm_config_set_in_pin_base(&c2, 10);
     //sm_config_set_in_pin_count(&c2, 1);
     //pio_sm_init(pio, 1, offset, &c2);
 
+    uint32_t offset = pio_add_program(pio, &isospi_master_wait_for_high_program);
+    pio_sm_config c2 = isospi_master_wait_for_high_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c2, rx_pin_base);
+    sm_config_set_in_pin_count(&c2, 1);
+    pio_sm_init(pio, 1, offset, &c2);
+
     //////
 
-    //pio_sm_config c3 = isospi_master_wait_for_high_program_get_default_config(offset);
-    //sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
-    //sm_config_set_in_pin_count(&c3, 1);
-    //pio_sm_init(pio, 2, offset, &c3);
+    pio_sm_config c3 = isospi_master_wait_for_high_program_get_default_config(offset);
+    sm_config_set_in_pin_base(&c3, rx_pin_base + 1);
+    sm_config_set_in_pin_count(&c3, 1);
+    pio_sm_init(pio, 2, offset, &c3);
 
     //////
 
@@ -240,7 +250,7 @@ void isospi_master_cs(bool start) {
   pio_sm_set_enabled(master_pio, 0, true);
 
   // Send a CS
-  pio_sm_put_blocking(master_pio, 0, (start ? 0b1110 : 0b1011) << 28);
+  pio_sm_put_blocking(master_pio, 0, (start ? 0b1011 : 0b1110) << 28);
 
   sleep_us(2);
 

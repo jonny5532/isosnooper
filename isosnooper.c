@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "pico/multicore.h"
+
+#include "hardware/clocks.h"
+#include "hardware/vreg.h"
 
 #include "isospi_master.h"
 #include "isospi_scope.h"
@@ -12,15 +16,34 @@
 
 #define LED_PIN 25
 
+void core1_entry() {
+    isospi_device_setup(26, 18);
+    while(true) {
+        sleep_ms(1000);
+    }
+}
+
 int main() {
     stdio_usb_init();
     //while (!stdio_usb_connected()) {}
+
+    //vreg_set_voltage(VREG_VOLTAGE_1_20);
+    sleep_ms(10);
+    if(!set_sys_clock_khz(150000, false)) {// 300 MHz
+        while(true) {
+            // clock switch failed
+            sleep_ms(1000);
+        }
+    }
+
     sleep_ms(4000);
     
     isospi_master_setup(20, 18); // pins 20+21
     isosnoop_setup(18, true, 16);
-    isospi_device_setup(26, 18);
+    //isospi_device_setup(26, 18);
     //isospi_scope_setup(18, true);
+
+    multicore_launch_core1(core1_entry);
     
     // printf("waiting...\n");
 // sleep_ms(5000);
@@ -41,8 +64,8 @@ int main() {
 
 
     printf("Running tests...\n");
-    int passed = isospi_write_tests(50);
-    printf("Tests passed: %d/50\n", passed);
+    // int passed = isospi_write_tests(50);
+    // printf("Tests passed: %d/50\n", passed);
 
     //isospi_calibrate();
 
@@ -73,7 +96,7 @@ int main() {
         // );
         
         //isospi_invert_first_chip_select(true);
-        bool valid = isospi_write_read_blocking(WAKEUP, rx, sizeof(tx));
+        bool valid = isospi_write_read_blocking(WAKEUP, rx, sizeof(WAKEUP));
 
         //printf("rx: %02x %02x %d\n", rx[0], rx[1], valid ? 1 : 0);
 
@@ -93,6 +116,8 @@ int main() {
         sleep_us(2);
 
         isosnoop_print_buffer();
+
+        //isospi_device_flush();
 
         //print_isospi_scope_output();
 

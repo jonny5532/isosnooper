@@ -128,9 +128,9 @@ void isosnoop_pio_setup(PIO pio, uint rx_pin_base, int invert, uint sampling_pin
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
 
     // diagnostic output showing sampling points
-    pio_gpio_init(pio, sampling_pin);
-    pio_sm_set_consecutive_pindirs(pio, 0, sampling_pin, 1, true);
-    sm_config_set_sideset_pins(&c, sampling_pin);
+    //pio_gpio_init(pio, sampling_pin);
+    //pio_sm_set_consecutive_pindirs(pio, 0, sampling_pin, 1, true);
+    //sm_config_set_sideset_pins(&c, sampling_pin);
 
     // configure (sampling_pin + 1) as set pin for timer disable flag
     uint timer_disable_pin = sampling_pin + 1;
